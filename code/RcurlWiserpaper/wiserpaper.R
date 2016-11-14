@@ -6,7 +6,6 @@ library(dplyr)
 library(rvest)
 library(wordcloud2)
 
-setwd("/Users/shihchosen/Documents/R/R-workplace/AirplaneTicketScrapy/Wiley-ADCR/ch-9-scraping/scenario-maryland/wisepapers/")
 # 获得论文的每一个分页
 pageLinks <- str_c("http://121.192.176.75/index.php?ser_id=2&search=&year=&os=",seq(0, 240, 20))
 
@@ -16,7 +15,6 @@ paperlinks <- lapply(pageLinks, getHTMLLinks)%>%
   str_extract("\\?ser_id=2&p_id=\\d+")%>%
   na.omit()%>%
   str_c("http://121.192.176.75/index.php",.)
-
 # Function to scrap
 getPaperInfo <- function(paperlink){
   page_parse <- htmlParse(paperlink,encoding = "utf-8")
@@ -31,14 +29,9 @@ getPaperInfo <- function(paperlink){
   # File name include authoe title journal
   keyWords <- xpathSApply(page_parse,'//*[@id="paged_list"]/dl/dd[6]/text()', xmlValue)
   keyWords <- ifelse(length(keyWords)==0, NA, keyWords)
-  fullTextLink <- getHTMLLinks(page_parse)%>%
-    str_extract(".+\\.pdf")%>%
-    na.omit()
-  fullTextLink <- ifelse(length(fullTextLink)==0,NA,
-                         str_c("http://121.192.176.75",fullTextLink))
   updatedDate <- xpathSApply(page_parse,'//*[@id="paged_list"]/dl/dd[3]', xmlValue)%>%
     str_extract("20\\d{6}")
-  paperInfo <- data.frame(author, title,journal,keyWords, paperlink,fullTextLink, updatedDate)
+  paperInfo <- data.frame(author, title,journal,keyWords, updatedDate, paperlink)
   return(paperInfo)
 }
 
@@ -47,7 +40,6 @@ papers.df <- lapply(paperlinks, getPaperInfo)%>%
 papers.df <- papers.df[!duplicated(papers.df$title),]
 papers.en <- papers.df[str_detect(papers.df$journal,"[A-Za-z]"),]
 papers.en$journal <- trimws(papers.en$journal)
- 
 keyWords <- str_c(na.omit(papers.en$keyWords), collapse = " ")
 
 ## Caculate 
